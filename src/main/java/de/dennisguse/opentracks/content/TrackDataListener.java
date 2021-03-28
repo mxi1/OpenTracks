@@ -20,7 +20,6 @@ import androidx.annotation.NonNull;
 
 import de.dennisguse.opentracks.content.data.Marker;
 import de.dennisguse.opentracks.content.data.Track;
-import de.dennisguse.opentracks.content.data.TrackPoint;
 
 /**
  * Listener for track data changes.
@@ -47,20 +46,20 @@ public interface TrackDataListener {
      *
      * @param trackPoint the trackPoint
      */
-    void onSampledInTrackPoint(@NonNull TrackPoint trackPoint);
+    void onSampledInTrackPoint(@NonNull UITrackPoint trackPoint);
 
     /**
      * Called when a sampled out track point is read.
      *
      * @param trackPoint the trackPoint
      */
-    void onSampledOutTrackPoint(@NonNull TrackPoint trackPoint);
+    void onSampledOutTrackPoint(@NonNull UITrackPoint trackPoint);
 
     /**
      * Called when finish sending new track points.
-     * This gets called after every batch of calls to {@link #onSampledInTrackPoint(TrackPoint)} and {@link #onSampledOutTrackPoint(TrackPoint)}.
+     * This gets called after every batch of calls to {@link #onSampledInTrackPoint(UITrackPoint)} and {@link #onSampledOutTrackPoint(UITrackPoint)}.
      */
-    void onNewTrackPointsDone(@NonNull TrackPoint lastTrackPoint);
+    void onNewTrackPointsDone(@NonNull UITrackPoint lastTrackPoint);
 
     /**
      * Called to clear previously sent markers.

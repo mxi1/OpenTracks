@@ -33,10 +33,12 @@ import java.time.Instant;
 
 import de.dennisguse.opentracks.chart.ChartPoint;
 import de.dennisguse.opentracks.chart.ChartView;
+import de.dennisguse.opentracks.content.UITrackPoint;
 import de.dennisguse.opentracks.content.data.TrackPoint;
 import de.dennisguse.opentracks.util.UnitConversions;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Tests {@link ChartFragment}.
@@ -69,24 +71,24 @@ public class ChartFragmentTest {
     }
 
     /**
-     * Tests the logic to get the incorrect values of sensor in {@link ChartFragment#createPendingPoint(TrackPoint)}.
+     * Tests the logic to get the incorrect values of sensor in {@link ChartFragment#createPendingPoint(UITrackPoint)}.
      */
     @Test
     public void testCreatePendingPoint_sensorIncorrect() {
         // given
-        TrackPoint trackPoint = TrackStubUtils.createDefaultTrackPoint();
+        UITrackPoint uiTrackPoint = new UITrackPoint(TrackStubUtils.createDefaultTrackPoint(), 0d);
 
         // when
-        ChartPoint point = chartFragment.createPendingPoint(trackPoint);
+        ChartPoint point = chartFragment.createPendingPoint(uiTrackPoint);
 
         // then
-        assertEquals(Float.NaN, point.getHeartRate(), 0.01);
-        assertEquals(Float.NaN, point.getCadence(), 0.01);
-        assertEquals(Float.NaN, point.getPower(), 0.01);
+        assertNull(point.getHeartRate());
+        assertNull(point.getCadence());
+        assertNull(point.getPower());
     }
 
     /**
-     * Tests the logic to get the correct values of sensor in {@link ChartFragment#createPendingPoint(TrackPoint)}.
+     * Tests the logic to get the correct values of sensor in {@link ChartFragment#createPendingPoint(UITrackPoint)}.
      */
     @Test
     public void testCreatePendingPoint_sensorCorrect() {
@@ -97,7 +99,7 @@ public class ChartFragmentTest {
         trackPoint.setPower(102f);
 
         // when
-        ChartPoint point = chartFragment.createPendingPoint(trackPoint);
+        ChartPoint point = chartFragment.createPendingPoint(new UITrackPoint(trackPoint, 0d));
 
         // then
         assertEquals(100.0, point.getHeartRate(), 0.01);
@@ -106,47 +108,47 @@ public class ChartFragmentTest {
     }
 
     /**
-     * Tests the logic to get the value of metric Distance in {@link ChartFragment#createPendingPoint(TrackPoint)}.
+     * Tests the logic to get the value of metric Distance in {@link ChartFragment#createPendingPoint(UITrackPoint)}.
      */
     @Test
     public void testCreatePendingPoint_distanceMetric() {
         chartFragment.setChartByDistance(true);
         // Resets last location and writes first location.
         TrackPoint trackPoint1 = TrackStubUtils.createDefaultTrackPoint();
-        ChartPoint point = chartFragment.createPendingPoint(trackPoint1);
+        ChartPoint point = chartFragment.createPendingPoint(new UITrackPoint(trackPoint1, 0d));
+
         assertEquals(0.0, point.getTimeOrDistance(), 0.01);
 
         // The second is a same location, just different time.
         TrackPoint trackPoint2 = TrackStubUtils.createDefaultTrackPoint();
-        point = chartFragment.createPendingPoint(trackPoint2);
-        assertEquals(0.0, point.getTimeOrDistance(), 0.01);
+        ChartPoint point2 = chartFragment.createPendingPoint(new UITrackPoint(trackPoint2, 0d));
+        assertEquals(0.0, point2.getTimeOrDistance(), 0.01);
 
         // The third location is a new location, and use metric.
         TrackPoint trackPoint3 = TrackStubUtils.createDefaultTrackPoint();
         trackPoint3.setLatitude(23);
-        point = chartFragment.createPendingPoint(trackPoint3);
+        ChartPoint point3 = chartFragment.createPendingPoint(new UITrackPoint(trackPoint3, 0d));
 
         // Computes the distance between Latitude 22 and 23.
         float[] results = new float[4];
         Location.distanceBetween(trackPoint2.getLatitude(), trackPoint2.getLongitude(),
                 trackPoint3.getLatitude(), trackPoint3.getLongitude(), results);
         double distance1 = results[0] * UnitConversions.M_TO_KM;
-        assertEquals(distance1, point.getTimeOrDistance(), 0.01);
+        assertEquals(distance1, point3.getTimeOrDistance(), 0.01);
 
         // The fourth location is a new location, and use metric.
         TrackPoint trackPoint4 = TrackStubUtils.createDefaultTrackPoint();
         trackPoint4.setLatitude(24);
-        point = chartFragment.createPendingPoint(trackPoint4);
+        ChartPoint point4 = chartFragment.createPendingPoint(new UITrackPoint(trackPoint2, 0d));
 
         // Computes the distance between Latitude 23 and 24.
-        Location.distanceBetween(trackPoint3.getLatitude(), trackPoint3.getLongitude(),
-                trackPoint4.getLatitude(), trackPoint4.getLongitude(), results);
+        Location.distanceBetween(trackPoint3.getLatitude(), trackPoint3.getLongitude(), trackPoint4.getLatitude(), trackPoint4.getLongitude(), results);
         double distance2 = results[0] * UnitConversions.M_TO_KM;
-        assertEquals((distance1 + distance2), point.getTimeOrDistance(), 0.01);
+        assertEquals((distance1 + distance2), point4.getTimeOrDistance(), 0.02);
     }
 
     /**
-     * Tests the logic to get the value of imperial Distance in {@link ChartFragment#createPendingPoint(TrackPoint)}.
+     * Tests the logic to get the value of imperial Distance in {@link ChartFragment#createPendingPoint(UITrackPoint)}.
      */
     @Test
     public void testCreatePendingPoint_distanceImperial() {
@@ -157,13 +159,13 @@ public class ChartFragmentTest {
 
         // The first is a same location, just different time.
         TrackPoint trackPoint1 = TrackStubUtils.createDefaultTrackPoint();
-        ChartPoint point = chartFragment.createPendingPoint(trackPoint1);
+        ChartPoint point = chartFragment.createPendingPoint(new UITrackPoint(trackPoint1, 0d));
         assertEquals(0.0, point.getTimeOrDistance(), 0.01);
 
         // The second location is a new location, and use imperial.
         TrackPoint trackPoint2 = TrackStubUtils.createDefaultTrackPoint();
         trackPoint2.setLatitude(23);
-        point = chartFragment.createPendingPoint(trackPoint2);
+        ChartPoint point2 = chartFragment.createPendingPoint(new UITrackPoint(trackPoint2, 0d));
 
         /*
          * Computes the distance between Latitude 22 and 23.
@@ -172,12 +174,13 @@ public class ChartFragmentTest {
         float[] results = new float[4];
         Location.distanceBetween(trackPoint1.getLatitude(), trackPoint1.getLongitude(), trackPoint2.getLatitude(), trackPoint2.getLongitude(), results);
         double distance1 = results[0] * UnitConversions.M_TO_KM * UnitConversions.KM_TO_MI;
-        assertEquals(distance1, point.getTimeOrDistance(), 0.01);
+        assertEquals(distance1, point2.getTimeOrDistance(), 0.01);
 
         // The third location is a new location, and use imperial.
         TrackPoint trackPoint3 = TrackStubUtils.createDefaultTrackPoint();
         trackPoint3.setLatitude(24);
-        point = chartFragment.createPendingPoint(trackPoint3);
+
+        ChartPoint point3 = chartFragment.createPendingPoint(new UITrackPoint(trackPoint3, 0d));
 
         /*
          * Computes the distance between Latitude 23 and 24.
@@ -185,11 +188,11 @@ public class ChartFragmentTest {
          */
         Location.distanceBetween(trackPoint2.getLatitude(), trackPoint2.getLongitude(), trackPoint3.getLatitude(), trackPoint3.getLongitude(), results);
         double distance2 = results[0] * UnitConversions.M_TO_KM * UnitConversions.KM_TO_MI;
-        assertEquals(distance1 + distance2, point.getTimeOrDistance(), 0.01);
+        assertEquals(distance1 + distance2, point3.getTimeOrDistance(), 0.01);
     }
 
     /**
-     * Tests the logic to get the values of time in {@link ChartFragment#createPendingPoint(TrackPoint)}.
+     * Tests the logic to get the values of time in {@link ChartFragment#createPendingPoint(UITrackPoint)}.
      */
     @Test
     public void testCreatePendingPoint_time() {
@@ -199,42 +202,21 @@ public class ChartFragmentTest {
         trackPoint1.setTime(Instant.ofEpochMilli(TrackStubUtils.INITIAL_TIME)); //Keep old TrackPoint behavior of having time=0 for this test
 
         // when
-        ChartPoint point = chartFragment.createPendingPoint(trackPoint1);
+        ChartPoint point = chartFragment.createPendingPoint(new UITrackPoint(trackPoint1, 0d));
 
         // then
         assertEquals(0.0, point.getTimeOrDistance(), 0.01);
         Duration timeSpan = Duration.ofMillis(222);
         TrackPoint trackPoint2 = TrackStubUtils.createDefaultTrackPoint();
         trackPoint2.setTime(Instant.ofEpochMilli(TrackStubUtils.INITIAL_TIME).plus(timeSpan));
-        point = chartFragment.createPendingPoint(trackPoint2);
-        assertEquals(timeSpan, Duration.ofMillis((long) point.getTimeOrDistance()));
+
+        ChartPoint point2 = chartFragment.createPendingPoint(new UITrackPoint(trackPoint2, 0d));
+
+        assertEquals(timeSpan, Duration.ofMillis((long) point2.getTimeOrDistance()));
     }
 
     /**
-     * Tests the logic to get the value of altitude in {@link ChartFragment#createPendingPoint(TrackPoint)} by one and two points.
-     */
-    @Test
-    public void testCreatePendingPoint_altitude() {
-        TrackPoint trackPoint1 = TrackStubUtils.createDefaultTrackPoint();
-
-        /*
-         * At first, clear old points of altitude, so give true to the second parameter.
-         * Then only one value INITIAL_ALTITUDE in buffer.
-         */
-        ChartPoint point = chartFragment.createPendingPoint(trackPoint1);
-        assertEquals(TrackStubUtils.INITIAL_ALTITUDE, point.getAltitude(), 0.01);
-
-        /*
-         * Send another value to buffer, now there are two values, INITIAL_ALTITUDE and INITIAL_ALTITUDE * 2.
-         */
-        TrackPoint trackPoint2 = TrackStubUtils.createDefaultTrackPoint();
-        trackPoint2.setAltitude(TrackStubUtils.INITIAL_ALTITUDE * 2);
-        point = chartFragment.createPendingPoint(trackPoint2);
-        assertEquals((TrackStubUtils.INITIAL_ALTITUDE + TrackStubUtils.INITIAL_ALTITUDE * 2) / 2.0, point.getAltitude(), 0.01);
-    }
-
-    /**
-     * Tests the logic to get the value of speed in {@link ChartFragment#createPendingPoint(TrackPoint)}.
+     * Tests the logic to get the value of speed in {@link ChartFragment#createPendingPoint(UITrackPoint)}.
      * In this test, firstly remove all points in memory, and then fill in two points one by one.
      * The speed values of these points are 129, 130.
      */
@@ -246,7 +228,8 @@ public class ChartFragmentTest {
          */
         TrackPoint trackPoint1 = TrackStubUtils.createDefaultTrackPoint();
         trackPoint1.setSpeed(128.5f);
-        ChartPoint point = chartFragment.createPendingPoint(trackPoint1);
+        ChartPoint point = chartFragment.createPendingPoint(new UITrackPoint(trackPoint1, 0d));
+
         assertEquals(0.0, point.getSpeed(), 0.01);
 
         /*
@@ -260,8 +243,9 @@ public class ChartFragmentTest {
          */
         trackPoint2.setTime(trackPoint1.getTime().plusMillis(222));
         trackPoint2.setSpeed(130f);
-        point = chartFragment.createPendingPoint(trackPoint2);
-        assertEquals(130.0 * UnitConversions.MPS_TO_KMH, point.getSpeed(), 0.01);
+        ChartPoint point2 = chartFragment.createPendingPoint(new UITrackPoint(trackPoint2, 0d));
+
+        assertEquals(130.0 * UnitConversions.MPS_TO_KMH, point2.getSpeed(), 0.01);
     }
 
     /**
@@ -274,7 +258,8 @@ public class ChartFragmentTest {
         // First data point is not added to the speed buffer
         TrackPoint trackPoint1 = TrackStubUtils.createDefaultTrackPoint();
         trackPoint1.setSpeed(100.0f);
-        ChartPoint point = chartFragment.createPendingPoint(trackPoint1);
+        ChartPoint point = chartFragment.createPendingPoint(new UITrackPoint(trackPoint1, 0d));
+
         assertEquals(0.0, point.getSpeed(), 0.01);
 
         TrackPoint trackPoint2 = TrackStubUtils.createDefaultTrackPoint();
@@ -285,8 +270,10 @@ public class ChartFragmentTest {
          */
         trackPoint2.setTime(trackPoint2.getTime().plusMillis(222));
         trackPoint2.setSpeed(102f);
-        point = chartFragment.createPendingPoint(trackPoint2);
-        assertEquals(102.0 * UnitConversions.MPS_TO_KMH * UnitConversions.KM_TO_MI, point.getSpeed(), 0.01);
+
+        ChartPoint point2 = chartFragment.createPendingPoint(new UITrackPoint(trackPoint2, 0d));
+
+        assertEquals(102.0 * UnitConversions.MPS_TO_KMH * UnitConversions.KM_TO_MI, point2.getSpeed(), 0.01);
     }
 
     /**
@@ -299,7 +286,8 @@ public class ChartFragmentTest {
         // First data point is not added to the speed buffer
         TrackPoint trackPoint1 = TrackStubUtils.createDefaultTrackPoint();
         trackPoint1.setSpeed(100.0f);
-        ChartPoint point = chartFragment.createPendingPoint(trackPoint1);
+        ChartPoint point = chartFragment.createPendingPoint(new UITrackPoint(trackPoint1, 0d));
+
         assertEquals(0.0, point.getSpeed(), 0.01);
 
         TrackPoint trackPoint2 = TrackStubUtils.createDefaultTrackPoint();
@@ -310,8 +298,9 @@ public class ChartFragmentTest {
          */
         trackPoint2.setTime(trackPoint2.getTime().plusMillis(222));
         trackPoint2.setSpeed(102f);
-        point = chartFragment.createPendingPoint(trackPoint2);
-        assertEquals(HOURS_PER_UNIT / (102.0 * UnitConversions.MPS_TO_KMH), point.getPace(), 0.01);
+        ChartPoint point2 = chartFragment.createPendingPoint(new UITrackPoint(trackPoint2, 0d));
+
+        assertEquals(HOURS_PER_UNIT / (102.0 * UnitConversions.MPS_TO_KMH), point2.getPace(), 0.01);
     }
 
     /**
@@ -322,7 +311,9 @@ public class ChartFragmentTest {
         chartFragment.setReportSpeed(false);
         TrackPoint trackPoint = TrackStubUtils.createDefaultTrackPoint();
         trackPoint.setSpeed(0f);
-        ChartPoint point = chartFragment.createPendingPoint(trackPoint);
+
+        ChartPoint point = chartFragment.createPendingPoint(new UITrackPoint(trackPoint, 0d));
+
         assertEquals(0.0, point.getPace(), 0.01);
     }
 }

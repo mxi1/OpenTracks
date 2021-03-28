@@ -207,7 +207,7 @@ public class ChartView extends View {
                 fontSizeSmall,
                 fontSizeMedium) {
             @Override
-            protected double extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
+            protected Float extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
                 return chartPoint.getAltitude();
             }
 
@@ -228,7 +228,7 @@ public class ChartView extends View {
                 fontSizeSmall,
                 fontSizeMedium) {
             @Override
-            protected double extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
+            protected Float extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
                 return chartPoint.getSpeed();
             }
 
@@ -250,7 +250,7 @@ public class ChartView extends View {
                 fontSizeSmall,
                 fontSizeMedium) {
             @Override
-            protected double extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
+            protected Float extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
                 return chartPoint.getPace();
             }
 
@@ -272,7 +272,7 @@ public class ChartView extends View {
                 fontSizeSmall,
                 fontSizeMedium) {
             @Override
-            protected double extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
+            protected Float extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
                 return chartPoint.getHeartRate();
             }
 
@@ -293,7 +293,7 @@ public class ChartView extends View {
                 fontSizeSmall,
                 fontSizeMedium) {
             @Override
-            protected double extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
+            protected Float extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
                 return chartPoint.getCadence();
             }
 
@@ -313,7 +313,7 @@ public class ChartView extends View {
                 fontSizeSmall,
                 fontSizeMedium) {
             @Override
-            protected double extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
+            protected Float extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
                 return chartPoint.getPower();
             }
 

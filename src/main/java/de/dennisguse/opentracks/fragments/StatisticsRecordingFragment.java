@@ -24,9 +24,9 @@ import de.dennisguse.opentracks.TrackRecordingActivity;
 import de.dennisguse.opentracks.adapters.SensorsAdapter;
 import de.dennisguse.opentracks.content.TrackDataHub;
 import de.dennisguse.opentracks.content.TrackDataListener;
+import de.dennisguse.opentracks.content.UITrackPoint;
 import de.dennisguse.opentracks.content.data.Marker;
 import de.dennisguse.opentracks.content.data.Track;
-import de.dennisguse.opentracks.content.data.TrackPoint;
 import de.dennisguse.opentracks.content.sensor.SensorDataCycling;
 import de.dennisguse.opentracks.content.sensor.SensorDataSet;
 import de.dennisguse.opentracks.databinding.StatisticsRecordingBinding;
@@ -60,7 +60,7 @@ public class StatisticsRecordingFragment extends Fragment implements TrackDataLi
     private Handler handlerUpdateUI;
 
     private TrackRecordingServiceConnection trackRecordingServiceConnection = new TrackRecordingServiceConnection();
-    private TrackPoint lastTrackPoint;
+    private UITrackPoint lastTrackPoint;
 
     //TODO Should not be nullable
     private TrackStatistics lastTrackStatistics;
@@ -215,17 +215,17 @@ public class StatisticsRecordingFragment extends Fragment implements TrackDataLi
     }
 
     @Override
-    public void onSampledInTrackPoint(@NonNull TrackPoint trackPoint) {
+    public void onSampledInTrackPoint(@NonNull UITrackPoint trackPoint) {
         // We don't care.
     }
 
     @Override
-    public void onSampledOutTrackPoint(@NonNull TrackPoint trackPoint) {
+    public void onSampledOutTrackPoint(@NonNull UITrackPoint trackPoint) {
         // We don't care.
     }
 
     @Override
-    public void onNewTrackPointsDone(@NonNull TrackPoint newLastTrackPoint) {
+    public void onNewTrackPointsDone(@NonNull UITrackPoint newLastTrackPoint) {
         if (isResumed()) {
             getActivity().runOnUiThread(() -> {
                 if (isResumed()) {
@@ -458,6 +458,7 @@ public class StatisticsRecordingFragment extends Fragment implements TrackDataLi
         if (preferenceShowAltitude) {
             // Current altitude
             Float altitude = lastTrackPoint != null && lastTrackPoint.hasAltitude() ? (float) lastTrackPoint.getAltitude() : null;
+
             Pair<String, String> parts = StringUtils.formatAltitude(getContext(), altitude, preferenceMetricUnits);
             viewBinding.statsAltitudeCurrentValue.setText(parts.first);
             viewBinding.statsAltitudeCurrentUnit.setText(parts.second);

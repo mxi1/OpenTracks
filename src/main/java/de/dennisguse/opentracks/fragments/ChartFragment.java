@@ -37,9 +37,9 @@ import de.dennisguse.opentracks.chart.ChartPoint;
 import de.dennisguse.opentracks.chart.ChartView;
 import de.dennisguse.opentracks.content.TrackDataHub;
 import de.dennisguse.opentracks.content.TrackDataListener;
+import de.dennisguse.opentracks.content.UITrackPoint;
 import de.dennisguse.opentracks.content.data.Marker;
 import de.dennisguse.opentracks.content.data.Track;
-import de.dennisguse.opentracks.content.data.TrackPoint;
 import de.dennisguse.opentracks.databinding.ChartBinding;
 import de.dennisguse.opentracks.stats.TrackStatistics;
 import de.dennisguse.opentracks.stats.TrackStatisticsUpdater;
@@ -228,23 +228,23 @@ public class ChartFragment extends Fragment implements TrackDataListener {
     }
 
     @Override
-    public void onSampledInTrackPoint(@NonNull TrackPoint trackPoint) {
+    public void onSampledInTrackPoint(@NonNull UITrackPoint trackPoint) {
         if (isResumed()) {
             pendingPoints.add(createPendingPoint(trackPoint));
         }
     }
 
     @Override
-    public void onSampledOutTrackPoint(@NonNull TrackPoint trackPoint) {
+    public void onSampledOutTrackPoint(@NonNull UITrackPoint trackPoint) {
         if (isResumed()) {
             if (trackStatisticsUpdater != null) {
-                trackStatisticsUpdater.addTrackPoint(trackPoint, recordingDistanceInterval);
+                trackStatisticsUpdater.addTrackPoint(trackPoint.getTrackPoint(), recordingDistanceInterval);
             }
         }
     }
 
     @Override
-    public void onNewTrackPointsDone(@NonNull TrackPoint unused) {
+    public void onNewTrackPointsDone(@NonNull UITrackPoint unused) {
         if (isResumed()) {
             chartView.addChartPoints(pendingPoints);
             pendingPoints.clear();
@@ -322,8 +322,8 @@ public class ChartFragment extends Fragment implements TrackDataListener {
     }
 
     @VisibleForTesting
-    ChartPoint createPendingPoint(@NonNull TrackPoint trackPoint) {
-        trackStatisticsUpdater.addTrackPoint(trackPoint, recordingDistanceInterval);
+    ChartPoint createPendingPoint(@NonNull UITrackPoint trackPoint) {
+        trackStatisticsUpdater.addTrackPoint(trackPoint.getTrackPoint(), recordingDistanceInterval);
         return new ChartPoint(trackStatisticsUpdater, trackPoint, chartByDistance, chartView.getMetricUnits());
     }
 

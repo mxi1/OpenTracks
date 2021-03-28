@@ -52,7 +52,7 @@ public class ChartValueSeriesTest {
                 15,
                 18) {
             @Override
-            double extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
+            Float extractDataFromChartPoint(@NonNull ChartPoint chartPoint) {
                 return chartPoint.getAltitude();
             }
 
@@ -79,8 +79,8 @@ public class ChartValueSeriesTest {
 
     @Test
     public void testSmallUpdates() {
-        series.update(new ChartPoint(0));
-        series.update(new ChartPoint(10));
+        series.update(new ChartPoint(0f));
+        series.update(new ChartPoint(10f));
         series.updateDimension();
         assertEquals(100, series.getInterval());
         assertEquals(0, series.getMinMarkerValue());
@@ -89,8 +89,8 @@ public class ChartValueSeriesTest {
 
     @Test
     public void testBigUpdates() {
-        series.update(new ChartPoint(0));
-        series.update(new ChartPoint(901));
+        series.update(new ChartPoint(0f));
+        series.update(new ChartPoint(901f));
         series.updateDimension();
         assertEquals(1000, series.getInterval());
         assertEquals(0, series.getMinMarkerValue());
@@ -99,8 +99,8 @@ public class ChartValueSeriesTest {
 
     @Test
     public void testNotZeroBasedUpdates() {
-        series.update(new ChartPoint(220));
-        series.update(new ChartPoint(250));
+        series.update(new ChartPoint(220f));
+        series.update(new ChartPoint(250f));
         series.updateDimension();
         assertEquals(100, series.getInterval());
         assertEquals(200, series.getMinMarkerValue());

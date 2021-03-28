@@ -20,6 +20,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.location.Location;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
@@ -27,6 +28,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 
@@ -38,6 +40,7 @@ import de.dennisguse.opentracks.content.data.TrackPointsColumns;
 import de.dennisguse.opentracks.content.data.TracksColumns;
 import de.dennisguse.opentracks.content.provider.ContentProviderUtils;
 import de.dennisguse.opentracks.content.provider.TrackPointIterator;
+import de.dennisguse.opentracks.util.EGM2008Utils;
 import de.dennisguse.opentracks.services.TrackRecordingServiceStatus;
 import de.dennisguse.opentracks.services.TrackRecordingServiceConnection;
 import de.dennisguse.opentracks.services.TrackRecordingServiceInterface;
@@ -67,7 +70,7 @@ public class TrackDataHub implements TrackRecordingServiceStatus.Listener {
     private static final String TAG = TrackDataHub.class.getSimpleName();
 
     private final Context context;
-    private final TrackDataManager trackDataManager;
+    private final TrackDataManager trackDataManager = new TrackDataManager();
     private final ContentProviderUtils contentProviderUtils;
     private final int targetNumPoints;
 
@@ -87,6 +90,8 @@ public class TrackDataHub implements TrackRecordingServiceStatus.Listener {
     private TrackPoint.Id firstSeenTrackPointId;
     private TrackPoint.Id lastSeenTrackPointId;
 
+    private EGM2008Utils.EGM2008Correction egm2008Correction;
+
     // Registered listeners
     private ContentObserver tracksTableObserver;
     private ContentObserver markersTableObserver;
@@ -100,15 +105,9 @@ public class TrackDataHub implements TrackRecordingServiceStatus.Listener {
     };
 
     public TrackDataHub(Context context) {
-        this(context, new TrackDataManager(), new ContentProviderUtils(context), TARGET_DISPLAYED_TRACKPOINTS);
-    }
-
-    @VisibleForTesting
-    private TrackDataHub(Context context, TrackDataManager trackDataManager, ContentProviderUtils contentProviderUtils, int targetNumPoints) {
         this.context = context;
-        this.trackDataManager = trackDataManager;
-        this.contentProviderUtils = contentProviderUtils;
-        this.targetNumPoints = targetNumPoints;
+        this.contentProviderUtils = new ContentProviderUtils(context);
+        this.targetNumPoints = TARGET_DISPLAYED_TRACKPOINTS;
         resetSamplingState();
     }
 
@@ -227,6 +226,25 @@ public class TrackDataHub implements TrackRecordingServiceStatus.Listener {
      */
     public boolean isSelectedTrackPaused() {
         return selectedTrackId != null && selectedTrackId.equals(recordingTrackId) && recordingTrackPaused;
+    }
+
+    private Double correctAltitude(@NonNull TrackPoint trackPoint) {
+        if (!trackPoint.hasLocation() || !trackPoint.hasAltitude()) {
+            return null;
+        }
+
+        Location location = trackPoint.getLocation();
+        if (egm2008Correction == null || !egm2008Correction.canCorrect(location)) {
+            try {
+                Log.d(TAG, "Load EGM2008 correction for location " + location);
+                egm2008Correction = EGM2008Utils.createEGM2008Correction(context, location);
+            } catch (IOException e) {
+                Log.e(TAG, "Could not load egm2008 correction: " + e);
+                return null;
+            }
+        }
+
+        return egm2008Correction.correctAltitude(location);
     }
 
     /**
@@ -362,12 +380,14 @@ public class TrackDataHub implements TrackRecordingServiceStatus.Listener {
             next = new TrackPoint.Id(localLastSeenTrackPointIdId.getId() + 1); //TODO startTrackPointId + 1 is an assumption assumption; should be derived from the DB.
         }
 
-        TrackPoint trackPoint = null;
+        UITrackPoint uiTrackPoint = null;
         try (TrackPointIterator trackPointIterator = contentProviderUtils.getTrackPointLocationIterator(selectedTrackId, next)) {
 
             while (trackPointIterator.hasNext()) {
-                trackPoint = trackPointIterator.next();
-                TrackPoint.Id trackPointId = trackPoint.getId();
+                TrackPoint trackPoint = trackPointIterator.next();
+                uiTrackPoint = new UITrackPoint(trackPoint, correctAltitude(trackPoint));
+
+                TrackPoint.Id trackPointId = uiTrackPoint.getId();
 
                 // Stop if past the last wanted point
                 if (maxPointId != null && trackPointId.getId() > maxPointId.getId()) {
@@ -387,11 +407,11 @@ public class TrackDataHub implements TrackRecordingServiceStatus.Listener {
                 // Also include the last point if the selected track is not recording.
                 if ((localNumLoadedTrackPoints % samplingFrequency == 0) || (trackPointId == lastTrackPointId && !isSelectedTrackRecording())) {
                     for (TrackDataListener trackDataListener : sampledInListeners) {
-                        trackDataListener.onSampledInTrackPoint(trackPoint);
+                        trackDataListener.onSampledInTrackPoint(uiTrackPoint);
                     }
                 } else {
                     for (TrackDataListener trackDataListener : sampledOutListeners) {
-                        trackDataListener.onSampledOutTrackPoint(trackPoint);
+                        trackDataListener.onSampledOutTrackPoint(uiTrackPoint);
                     }
                 }
 
@@ -399,8 +419,8 @@ public class TrackDataHub implements TrackRecordingServiceStatus.Listener {
             }
         }
 
-        if (trackPoint != null) {
-            localLastSeenTrackPointIdId = trackPoint.getId();
+        if (uiTrackPoint != null) {
+            localLastSeenTrackPointIdId = uiTrackPoint.getId();
         }
 
         if (updateSamplingState) {
@@ -409,9 +429,9 @@ public class TrackDataHub implements TrackRecordingServiceStatus.Listener {
             lastSeenTrackPointId = localLastSeenTrackPointIdId;
         }
 
-        if (trackPoint != null) {
+        if (uiTrackPoint != null) {
             for (TrackDataListener listener : sampledInListeners) {
-                listener.onNewTrackPointsDone(trackPoint);
+                listener.onNewTrackPointsDone(uiTrackPoint);
             }
         }
     }

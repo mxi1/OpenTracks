@@ -203,16 +203,8 @@ public class TrackStatisticsUpdater {
         }
     }
 
-    /**
-     * Gets the smoothed altitude over several readings.
-     * The altitude readings is noisy so the smoothed altitude is better than the raw altitude for many tasks.
-     */
-    public double getSmoothedAltitude() {
-        return altitudeBuffer_m.getAverage();
-    }
-
-    public double getSmoothedSpeed() {
-        return speedBuffer_mps.getAverage();
+    public float getSmoothedSpeed() {
+        return (float) speedBuffer_mps.getAverage();
     }
 
     /**
