@@ -34,43 +34,10 @@ public class EGM2008Utils {
     }
 
     public static EGM2008Correction createEGM2008Correction(Context context, Location location) throws IOException {
+        Indices indices = getIndices(location);
+
         try (DataInputStream dataInputStream = new DataInputStream(context.getResources().openRawResource(EGM2008_5_DATA))) {
-
-            Indices indices = getIndices(location);
-
-            double undulationRaw;
-            if (indices.latitudeIndex == 2160) {
-                // No bilinear interpolation on South Pole (not worth the time)
-                undulationRaw = getUndulationRaw(dataInputStream, indices);
-            } else {
-                // Bilinear interpolation
-                int v00 = getUndulationRaw(dataInputStream, indices);
-                int v10 = getUndulationRaw(dataInputStream, indices.offset(0, 1));
-                int v01 = getUndulationRaw(dataInputStream, indices.offset(1, 0));
-                int v11 = getUndulationRaw(dataInputStream, indices.offset(1, 1));
-
-                double fLongitude = location.getLongitude() * RESOLUTION_IN_MINUTES -
-                        (int) (location.getLongitude() * RESOLUTION_IN_MINUTES);
-
-                double fLatitude = (-location.getLatitude() + 90) * RESOLUTION_IN_MINUTES
-                        - (int) ((-location.getLatitude() + 90) * RESOLUTION_IN_MINUTES);
-
-                // Bilinear interpolation (optimized; taken from GeopgrahicLib/Geoid.cpp)
-                double
-                        a = (1 - fLongitude) * v00 + fLongitude * v01,
-                        b = (1 - fLongitude) * v10 + fLongitude * v11;
-                undulationRaw = (1 - fLatitude) * a + fLatitude * b;
-
-                // Bilinear interpolation (not optimized)
-                //undulationRaw = v00 * (1 - fLongitude) * (1 - fLatitude)
-                //        + v10 * fLongitude * (1 - fLatitude)
-                //        + v01 * (1 - fLongitude) * fLatitude
-                //        + v11 * fLongitude * fLatitude;
-            }
-
-            double h = 0.003 * undulationRaw - 108;
-
-            return new EGM2008Correction(indices, h);
+            return new EGM2008Correction(indices, dataInputStream);
         }
     }
 
@@ -110,16 +77,30 @@ public class EGM2008Utils {
 
     public static class EGM2008Correction {
 
-        private final int absoluteIndex;
-        private final double altitudeOffset_m;
+        protected final Indices indices;
 
-        public EGM2008Correction(Indices indices, double altitudeOffset_m) {
-            this.absoluteIndex = indices.getAbsoluteIndex();
-            this.altitudeOffset_m = altitudeOffset_m;
+        protected final int v00;
+        protected final int v10;
+        protected final int v01;
+        protected final int v11;
+
+        public EGM2008Correction(Indices indices, DataInputStream dataInputStream) throws IOException {
+            this.indices = indices;
+
+            v00 = getUndulationRaw(dataInputStream, indices);
+            if (!isSouthPole()) {
+                v10 = getUndulationRaw(dataInputStream, indices.offset(0, 1));
+                v01 = getUndulationRaw(dataInputStream, indices.offset(1, 0));
+                v11 = getUndulationRaw(dataInputStream, indices.offset(1, 1));
+            } else {
+                v10 = 0;
+                v01 = 0;
+                v11 = 0;
+            }
         }
 
         public boolean canCorrect(@NonNull Location location) {
-            return absoluteIndex == getIndices(location).getAbsoluteIndex();
+            return indices.getAbsoluteIndex() == getIndices(location).getAbsoluteIndex();
         }
 
         public double correctAltitude(@NonNull Location location) {
@@ -128,7 +109,36 @@ public class EGM2008Utils {
             if (!location.hasAltitude())
                 throw new RuntimeException("Location has no altitude");
 
-            return location.getAltitude() - altitudeOffset_m;
+            double undulationRaw;
+            if (isSouthPole()) {
+                // No bilinear interpolation on South Pole (not worth the time)
+                undulationRaw = v00;
+            } else {
+                double fLongitude = location.getLongitude() * RESOLUTION_IN_MINUTES -
+                        (int) (location.getLongitude() * RESOLUTION_IN_MINUTES);
+
+                double fLatitude = (-location.getLatitude() + 90) * RESOLUTION_IN_MINUTES
+                        - (int) ((-location.getLatitude() + 90) * RESOLUTION_IN_MINUTES);
+
+                // Bilinear interpolation (optimized; taken from GeopgrahicLib/Geoid.cpp)
+                double
+                        a = (1 - fLongitude) * v00 + fLongitude * v01,
+                        b = (1 - fLongitude) * v10 + fLongitude * v11;
+                undulationRaw = (1 - fLatitude) * a + fLatitude * b;
+            }
+            // Bilinear interpolation (not optimized)
+            //undulationRaw = v00 * (1 - fLongitude) * (1 - fLatitude)
+            //        + v10 * fLongitude * (1 - fLatitude)
+            //        + v01 * (1 - fLongitude) * fLatitude
+            //        + v11 * fLongitude * fLatitude;
+
+            double h = 0.003 * undulationRaw - 108;
+
+            return location.getAltitude() - h;
+        }
+
+        private boolean isSouthPole() {
+            return indices.latitudeIndex == 2160;
         }
     }
 

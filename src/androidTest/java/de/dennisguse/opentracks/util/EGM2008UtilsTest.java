@@ -19,6 +19,7 @@ import java.time.Instant;
 import de.dennisguse.opentracks.content.data.TrackPoint;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 @RunWith(JUnit4.class)
 public class EGM2008UtilsTest {
@@ -153,6 +154,26 @@ public class EGM2008UtilsTest {
 
         // then
         assertEquals(-39.4865, altitude_egm2008.correctAltitude(trackPoint.getLocation()), MAX_BILINEAR_ERROR);
+    }
+
+    @Test
+    public void data_Berlin_Caching() throws IOException {
+        // given
+        TrackPoint trackPoint1 = new TrackPoint(TrackPoint.Type.TRACKPOINT, Instant.ofEpochMilli(0));
+        trackPoint1.setLatitude(52.530644);
+        trackPoint1.setLongitude(13.383068);
+        trackPoint1.setAltitude(0);
+
+        TrackPoint trackPoint2 = new TrackPoint(TrackPoint.Type.TRACKPOINT, Instant.ofEpochMilli(0));
+        trackPoint2.setLatitude(52.530000);
+        trackPoint2.setLongitude(13.380000);
+        trackPoint2.setAltitude(0);
+
+        // when
+        EGM2008Utils.EGM2008Correction altitude_egm2008 = EGM2008Utils.createEGM2008Correction(context, trackPoint1.getLocation());
+
+        // then
+        assertNotEquals(altitude_egm2008.correctAltitude(trackPoint1.getLocation()), altitude_egm2008.correctAltitude(trackPoint2.getLocation()), 0.0001);
     }
 
     @Test
