@@ -62,9 +62,8 @@ public class StatisticsRecordingFragment extends Fragment implements TrackDataLi
     private TrackRecordingServiceConnection trackRecordingServiceConnection = new TrackRecordingServiceConnection();
     private UITrackPoint lastTrackPoint;
 
-    //TODO Should not be nullable
+    //TODO Keep reference to track rather than it's two properties.
     private TrackStatistics lastTrackStatistics;
-
     private String category = "";
 
     private StatisticsRecordingBinding viewBinding;
