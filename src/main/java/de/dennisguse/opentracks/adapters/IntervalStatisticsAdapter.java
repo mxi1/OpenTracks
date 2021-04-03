@@ -4,11 +4,10 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 
@@ -17,60 +16,78 @@ import de.dennisguse.opentracks.util.PreferencesUtils;
 import de.dennisguse.opentracks.util.StringUtils;
 import de.dennisguse.opentracks.viewmodels.IntervalStatistics;
 
-public class IntervalStatisticsAdapter extends ArrayAdapter<IntervalStatistics.Interval> {
+public class IntervalStatisticsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
+    private List<IntervalStatistics.Interval> intervalList;
+    private final Context context;
     private final StackMode stackMode;
-    private final boolean metricUnits;
-    private final String category;
+    private boolean metricUnits;
+    private String category;
 
-    public IntervalStatisticsAdapter(Context context, List<IntervalStatistics.Interval> intervalList, String category, StackMode stackMode) {
-        super(context, R.layout.interval_stats_list_item, intervalList);
+    public IntervalStatisticsAdapter(Context context, String category, StackMode stackMode) {
         metricUnits = PreferencesUtils.isMetricUnits(PreferencesUtils.getSharedPreferences(context), context);
+        this.context = context;
         this.category = category;
         this.stackMode = stackMode;
     }
 
-    //TODO Check preference handling! Should not be accessed in getView()
     @NonNull
     @Override
-    public View getView(int position, @Nullable View intervalView, @NonNull ViewGroup parent) {
-        int actualPosition = stackMode == StackMode.STACK_FROM_TOP ? position : getCount() - 1 - position;
-        IntervalStatistics.Interval interval = getItem(actualPosition);
-        ViewHolder viewHolder;
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.interval_stats_list_item, parent, false);
+        return new IntervalStatisticsAdapter.ViewHolder(view);
+    }
 
-        if (intervalView == null) {
-            viewHolder = new ViewHolder();
-
-            intervalView = LayoutInflater.from(getContext()).inflate(R.layout.interval_stats_list_item, parent, false);
-
-            viewHolder.distance = intervalView.findViewById(R.id.interval_item_distance);
-            viewHolder.rate = intervalView.findViewById(R.id.interval_item_rate);
-            viewHolder.gain = intervalView.findViewById(R.id.interval_item_gain);
-            viewHolder.loss = intervalView.findViewById(R.id.interval_item_loss);
-
-            intervalView.setTag(viewHolder);
-        } else {
-            viewHolder = (ViewHolder) intervalView.getTag();
-        }
+    //TODO Check preference handling! Should not be accessed in getView()
+    @Override
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        int actualPosition = stackMode == StackMode.STACK_FROM_TOP ? position : getItemCount() - 1 - position;
+        IntervalStatisticsAdapter.ViewHolder viewHolder = (IntervalStatisticsAdapter.ViewHolder) holder;
+        IntervalStatistics.Interval interval = intervalList.get(actualPosition);
+        viewHolder.itemView.setTag(actualPosition);
 
         float sumDistance_m;
-        if (actualPosition + 1 == getCount() && actualPosition > 0) {
-            sumDistance_m = actualPosition * getItem(actualPosition - 1).getDistance_m() + interval.getDistance_m();
+        if (actualPosition + 1 == getItemCount() && actualPosition > 0) {
+            sumDistance_m = actualPosition * intervalList.get(actualPosition - 1).getDistance_m() + interval.getDistance_m();
         } else {
             sumDistance_m = (actualPosition + 1) * interval.getDistance_m();
         }
-        viewHolder.distance.setText(StringUtils.formatDistance(getContext(), sumDistance_m, metricUnits));
+        viewHolder.distance.setText(StringUtils.formatDistance(context, sumDistance_m, metricUnits));
 
-        if (PreferencesUtils.isReportSpeed(PreferencesUtils.getSharedPreferences(getContext()), getContext(), category)) {
-            viewHolder.rate.setText(StringUtils.formatSpeed(getContext(), interval.getSpeed_ms(), metricUnits, true));
+        if (PreferencesUtils.isReportSpeed(PreferencesUtils.getSharedPreferences(context), context, category)) {
+            viewHolder.rate.setText(StringUtils.formatSpeed(context, interval.getSpeed_ms(), metricUnits, true));
         } else {
-            viewHolder.rate.setText(StringUtils.formatSpeed(getContext(), interval.getSpeed_ms(), metricUnits, false));
+            viewHolder.rate.setText(StringUtils.formatSpeed(context, interval.getSpeed_ms(), metricUnits, false));
         }
 
-        viewHolder.gain.setText(StringUtils.formatDistance(getContext(), interval.getGain_m(), metricUnits));
-        viewHolder.loss.setText(StringUtils.formatDistance(getContext(), interval.getLoss_m(), metricUnits));
+        viewHolder.gain.setText(StringUtils.formatDistance(context, interval.getGain_m(), metricUnits));
+        viewHolder.loss.setText(StringUtils.formatDistance(context, interval.getLoss_m(), metricUnits));
+    }
 
-        return intervalView;
+    @Override
+    public int getItemCount() {
+        if (intervalList == null) {
+            return 0;
+        } else {
+            return intervalList.size();
+        }
+    }
+
+    public List<IntervalStatistics.Interval> swapData(List<IntervalStatistics.Interval> data, String category, boolean metricUnits) {
+        this.category = category;
+        this.metricUnits = metricUnits;
+
+        if (intervalList == data) {
+            return null;
+        }
+
+        intervalList = data;
+
+        if (data != null) {
+            this.notifyDataSetChanged();
+        }
+
+        return data;
     }
 
     /**
@@ -81,10 +98,18 @@ public class IntervalStatisticsAdapter extends ArrayAdapter<IntervalStatistics.I
         STACK_FROM_TOP
     }
 
-    private static class ViewHolder {
-        private TextView distance;
-        private TextView rate;
-        private TextView gain;
-        private TextView loss;
+    private static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView distance;
+        TextView rate;
+        TextView gain;
+        TextView loss;
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            distance = itemView.findViewById(R.id.interval_item_distance);
+            rate = itemView.findViewById(R.id.interval_item_rate);
+            gain = itemView.findViewById(R.id.interval_item_gain);
+            loss = itemView.findViewById(R.id.interval_item_loss);
+        }
     }
 }
