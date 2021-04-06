@@ -16,14 +16,24 @@
 
 package de.dennisguse.opentracks;
 
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Display;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import de.dennisguse.opentracks.util.TTSUtils;
+
+import static de.dennisguse.opentracks.util.SystemUtils.getNavBarHeight;
+import static de.dennisguse.opentracks.util.SystemUtils.isVendorXiaomi;
 
 /**
  * @author Jimmy Shih
@@ -34,6 +44,19 @@ public abstract class AbstractActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        DisplayMetrics dm = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getRealMetrics(dm);
+        int height = dm.heightPixels;
+        Log.d("AbstractActivity", Integer.toString(height));
+        if (isVendorXiaomi(this)) {
+            height += getNavBarHeight(this) / 2 - 16;
+            Log.d("AbstractActivity", Integer.toString(height));
+            WindowManager.LayoutParams layoutParams = getWindow().getAttributes();
+            layoutParams.height = height;
+
+            this.getWindow().setAttributes(layoutParams);
+        }
+
         // Set volume control stream for text to speech
         setVolumeControlStream(TTSUtils.getTTSStream());
 
@@ -41,6 +64,15 @@ public abstract class AbstractActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setupActionBarBack(toolbar);
+
+        if (Build.VERSION.SDK_INT >= 21) {
+            Window window = this.getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            //window.setStatusBarColor(Color.rgb(0xf5, 0xf5, 0xf5));
+            // change the toolbar color to match the primary color
+            window.setStatusBarColor(this.getResources().getColor(R.color.colorAccent, this.getTheme()));
+        }
     }
 
     @Override

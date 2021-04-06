@@ -36,4 +36,15 @@ limitations under the License.
         <item name="android:navigationBarColor">@color/splashscreen_background</item>
         <item name="android:windowBackground">@drawable/splashscreen</item>
     </style>
+
+    <!-- values-29/themes.xml: -->
+
+    <style name="AppTheme" parent="ThemeCustom">
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!-- Optional, but recommended for full edge-to-edge rendering -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+
 </resources>

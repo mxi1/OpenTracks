@@ -21,11 +21,18 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.Build;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
+import android.provider.Settings;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
+import android.view.WindowManager;
 
 import androidx.core.content.pm.PackageInfoCompat;
+
+import java.lang.reflect.Method;
 
 import de.dennisguse.opentracks.BuildConfig;
 
@@ -54,6 +61,37 @@ public class SystemUtils {
             Log.w(TAG, "Failed to get version info.", e);
             return "";
         }
+    }
+
+    /**
+     * Check if the device vendor is xiaomi
+     * @return true or false
+     */
+
+    public static boolean isVendorXiaomi(Context context) {
+        Log.d(TAG, Build.MANUFACTURER);
+        if (Build.MANUFACTURER.equals("Xiaomi")) {
+            return Settings.Global.getInt(context.getContentResolver(), "force_fsg_nav_bar", 0) != 0;
+        }
+        return false;
+    }
+
+    public static int getNavBarHeight(Context context)  {
+        WindowManager wm = (WindowManager)context.getSystemService(Context.WINDOW_SERVICE);
+        Display display = wm.getDefaultDisplay();
+        DisplayMetrics dm = new DisplayMetrics();
+
+        try {
+            @SuppressWarnings("rawtypes")
+                    Class c = Class.forName("android.view.Display");
+            @SuppressWarnings("unchecked")
+            Method method = c.getMethod("getRealMetrics", DisplayMetrics.class);
+            method.invoke(display, dm);
+            return dm.heightPixels - display.getHeight();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
     public static Long getAppVersionCode(Context context) {
